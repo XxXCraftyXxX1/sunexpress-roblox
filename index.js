@@ -11,8 +11,7 @@ app.get("/", (req, res) => {
   res.send("✈️ SunExpress Roblox API is online");
 });
 
-// Booking route
-app.post("/book-flight", (req, res) => {
+app.post("/book-flight", async (req, res) => {
   const {
     username,
     flightNo,
@@ -25,17 +24,36 @@ app.post("/book-flight", (req, res) => {
     return res.status(400).json({ error: "Missing booking data" });
   }
 
-  console.log(
-    `${username} | ${flightNo} | ${seatNo} | ${bookingTime} | ${checkInCode}`
-  );
+  const webhook = process.env.DISCORD_WEBHOOK;
 
-  res.json({
-    status: "success",
-    airline: "SunExpress"
-  });
-});
+  const payload = {
+    embeds: [
+      {
+       title: `<:sunexpresswhite:1469031028327714856> Flight Booking : ${flightNo}`,
+        color: 16753920,
+        fields: [
+          { name: "Username", value: username, inline: true },
+          { name: "Flight No", value: flightNo, inline: true },
+          { name: "Seat", value: seatNo, inline: true },
+          { name: "Check-In Code", value: checkInCode, inline: true },
+          { name: "Booked At", value: bookingTime }
+        ],
+        footer: { text: "SunExpress Roblox System" }
+      }
+    ]
+  };
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`SunExpress Roblox API running on port ${PORT}`);
+  try {
+    await fetch(webhook, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    console.log("Booking sent to Discord");
+    res.json({ status: "success" });
+  } catch (err) {
+    console.error("Discord webhook error:", err);
+    res.status(500).json({ error: "Discord failed" });
+  }
 });
